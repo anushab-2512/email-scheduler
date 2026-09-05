@@ -3,6 +3,15 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tansta
 import { api } from '../lib/api';
 import { Email, PaginatedResult, ScheduleEmailPayload, CampaignWithStats, RecipientItem } from '../types';
 
+export function useCampaign(id?: string) {
+  return useQuery<CampaignWithStats>({
+    queryKey: ['campaign', id],
+    queryFn: () => api.get<CampaignWithStats>(`/emails/campaigns/${id}`),
+    enabled: !!id,
+    refetchInterval: 3000,
+  });
+}
+
 export function useCampaigns(page = 1, limit = 20) {
   return useQuery<PaginatedResult<CampaignWithStats>>({
     queryKey: ['campaigns', page, limit],
@@ -41,6 +50,26 @@ export function useInfiniteRecipients(limit = 30) {
     queryKey: ['recipients', 'infinite', limit],
     queryFn: ({ pageParam = 1 }) =>
       api.get<PaginatedResult<RecipientItem>>(`/emails/recipients?page=${pageParam}&limit=${limit}`),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.page < lastPage.totalPages) {
+        return lastPage.page + 1;
+      }
+      return undefined;
+    },
+    refetchInterval: 3000,
+  });
+}
+
+export function useInfiniteCampaignRecipients(campaignId?: string, limit = 30) {
+  return useInfiniteQuery<PaginatedResult<RecipientItem>>({
+    queryKey: ['recipients', 'infinite', campaignId, limit],
+    queryFn: ({ pageParam = 1 }) => {
+      const url = campaignId
+        ? `/emails/recipients?campaign_id=${campaignId}&page=${pageParam}&limit=${limit}`
+        : `/emails/recipients?page=${pageParam}&limit=${limit}`;
+      return api.get<PaginatedResult<RecipientItem>>(url);
+    },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       if (lastPage.page < lastPage.totalPages) {
@@ -121,6 +150,7 @@ export function useEmailEvents() {
             }
 
             queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+            queryClient.invalidateQueries({ queryKey: ['campaign'] });
             queryClient.invalidateQueries({ queryKey: ['recipients'] });
             queryClient.invalidateQueries({ queryKey: ['emails'] });
           }

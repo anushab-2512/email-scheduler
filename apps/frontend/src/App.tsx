@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from './features/auth/LoginPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
+import { ScheduledMailDetailsPage } from './features/scheduled-emails/ScheduledMailDetailsPage';
 import { useCurrentUser } from './hooks/useAuth';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { ToastProvider } from './components/common/Toast';
@@ -35,6 +36,14 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/scheduled-mails/:id"
+            element={
+              <ProtectedRoute>
+                <ScheduledMailDetailsPage />
               </ProtectedRoute>
             }
           />

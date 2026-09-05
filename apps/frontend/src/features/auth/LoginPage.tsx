@@ -1,13 +1,12 @@
 import React from 'react';
 import { Layers, ShieldCheck, Zap, RefreshCw, Send, AlertCircle } from 'lucide-react';
-import { BASE_URL } from '../../lib/api';
 
 export const LoginPage: React.FC = () => {
   const searchParams = new URLSearchParams(window.location.search);
   const error = searchParams.get('error');
 
   const handleGoogleLogin = () => {
-    window.location.href = `${BASE_URL}/auth/google`;
+    window.location.href = '/api/auth/google';
   };
 
   return (
@@ -97,23 +96,16 @@ export const LoginPage: React.FC = () => {
             <span>Sign in with Google</span>
           </button>
 
-          {/* Quick Demo Login */}
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">or test without oauth</span>
-            </div>
+          {/* Demo Sign-in Button */}
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => { window.location.href = '/api/auth/demo-login'; }}
+              className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-secondary/60 hover:bg-secondary text-xs font-semibold text-muted-foreground hover:text-foreground transition-all"
+            >
+              <span>Instant Demo Access (Seeded User)</span>
+            </button>
           </div>
-
-          <button
-            onClick={() => { window.location.href = `${BASE_URL}/auth/demo-login`; }}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/30 text-sm font-semibold text-primary transition-all hover:scale-[1.01] active:scale-[0.99]"
-          >
-            <Zap size={16} className="text-amber-500" />
-            <span>One-Click Demo Login</span>
-          </button>
 
           <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-6">
             <ShieldCheck size={14} className="text-emerald-500" />

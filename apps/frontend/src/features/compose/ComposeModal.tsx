@@ -65,8 +65,7 @@ export const ComposeModal: React.FC<ComposeModalProps> = ({ isOpen, onClose, onS
     setError(null);
   };
 
-  const handleAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const processAttachmentFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
 
     setError(null);
@@ -99,7 +98,13 @@ export const ComposeModal: React.FC<ComposeModalProps> = ({ isOpen, onClose, onS
     }
 
     setAttachments((prev) => [...prev, ...newItems]);
-    e.target.value = '';
+  };
+
+  const handleAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      await processAttachmentFiles(e.target.files);
+      e.target.value = '';
+    }
   };
 
   const handleRemoveAttachment = (id: string) => {
@@ -275,7 +280,7 @@ export const ComposeModal: React.FC<ComposeModalProps> = ({ isOpen, onClose, onS
                 <input
                   type="file"
                   multiple
-                  accept=".pdf,image/*,.doc,.docx,.txt,.csv,.zip"
+                  accept=".pdf,image/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,*/*"
                   onChange={handleAttachmentUpload}
                   className="hidden"
                 />
@@ -283,13 +288,22 @@ export const ComposeModal: React.FC<ComposeModalProps> = ({ isOpen, onClose, onS
             </div>
 
             {attachments.length === 0 ? (
-              <label className="border border-dashed border-border hover:border-primary/40 transition-colors rounded-xl p-3 flex items-center justify-center gap-2 cursor-pointer bg-secondary/10 text-muted-foreground text-xs">
+              <label
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    processAttachmentFiles(e.dataTransfer.files);
+                  }
+                }}
+                className="border border-dashed border-border hover:border-primary/40 transition-colors rounded-xl p-3 flex items-center justify-center gap-2 cursor-pointer bg-secondary/10 text-muted-foreground text-xs"
+              >
                 <Paperclip size={14} />
                 <span>Click or drag files here (PDF, Images, Word, etc.) — Optional</span>
                 <input
                   type="file"
                   multiple
-                  accept=".pdf,image/*,.doc,.docx,.txt,.csv,.zip"
+                  accept=".pdf,image/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,*/*"
                   onChange={handleAttachmentUpload}
                   className="hidden"
                 />

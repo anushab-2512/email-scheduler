@@ -40,6 +40,16 @@ async function start() {
     maxEmailsPerHour: env.DEFAULT_MAX_EMAILS_PER_HOUR,
   });
 
+  // Recover scheduled emails on startup
+  try {
+    const { recoverScheduledEmails } = await import('./recovery');
+    await recoverScheduledEmails();
+  } catch (recErr) {
+    logger.error('WORKER', 'Failed to recover scheduled emails', {
+      error: recErr instanceof Error ? recErr.message : String(recErr),
+    });
+  }
+
   // Graceful shutdown
   const shutdown = async (signal: string) => {
     logger.info('WORKER', `Received ${signal}, shutting down gracefully...`);

@@ -18,7 +18,7 @@ export const ScheduledEmailsTable: React.FC = () => {
     return (
       <div className="p-6 rounded-xl border border-destructive/20 bg-destructive/10 text-destructive text-sm flex items-center gap-2">
         <AlertCircle size={18} />
-        <span>Failed to load scheduled emails: {(error as any)?.message || 'Unknown error'}</span>
+        <span>Failed to load scheduled mails: {(error as any)?.message || 'Unknown error'}</span>
       </div>
     );
   }
@@ -31,7 +31,7 @@ export const ScheduledEmailsTable: React.FC = () => {
     return (
       <EmptyState
         icon={Clock}
-        title="No scheduled emails"
+        title="No scheduled mails"
         description="There are currently no pending or delayed email jobs in the queue. Click 'Compose New Email' above to schedule your first batch."
       />
     );

@@ -8,6 +8,7 @@ import { closeEmailQueue } from './queue/email.queue';
 import { closeNotificationQueue } from './queue/notification.queue';
 import { createEmailWorker } from './workers/email.worker';
 import { createNotificationWorker } from './workers/notification.worker';
+import { recoverScheduledEmails } from './workers/recovery';
 import { logger } from './utils/logger';
 
 async function start() {
@@ -35,6 +36,13 @@ async function start() {
       logger.info('API', 'BullMQ background workers initialized in-process', {
         concurrency: env.DEFAULT_WORKER_CONCURRENCY,
         minDelayMs: env.DEFAULT_MIN_EMAIL_DELAY_MS,
+      });
+
+      // Recover any pending/stuck scheduled emails across restarts
+      recoverScheduledEmails().catch((recErr) => {
+        logger.error('API', 'Background email recovery encountered an error', {
+          error: recErr instanceof Error ? recErr.message : String(recErr),
+        });
       });
     } catch (workerErr) {
       logger.error('API', 'Failed to initialize background workers', {

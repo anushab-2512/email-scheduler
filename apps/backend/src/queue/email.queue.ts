@@ -34,6 +34,17 @@ export async function addEmailJob(data: EmailJobData, delayMs: number): Promise<
   const queue = getEmailQueue();
   const jobId = JOB_IDS.email(data.emailId);
 
+  // If a failed job exists with this ID, remove it so BullMQ will accept re-adding it
+  try {
+    const existing = await queue.getJob(jobId);
+    if (existing) {
+      const state = await existing.getState();
+      if (state === 'failed') {
+        await existing.remove();
+      }
+    }
+  } catch {}
+
   await queue.add('send-email', data, {
     jobId,
     delay: Math.max(0, delayMs),

@@ -157,13 +157,37 @@ export const emailController = {
     }
   },
 
-  /** GET /api/emails/recipients — Paginated recipient items for Table */
+  /** GET /api/emails/campaigns/:id — Single composed email campaign with stats & attachments */
+  async getCampaignById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const campaignId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const campaign = await emailRepository.getCampaignByIdWithStats(campaignId, req.user!.userId);
+
+      if (!campaign) {
+        res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Campaign not found' },
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: campaign,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** GET /api/emails/recipients — Paginated recipient items for Table (optionally scoped to campaign_id) */
   async getAllRecipients(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      const campaignId = (req.query.campaign_id || req.query.campaignId) as string | undefined;
 
-      const result = await emailRepository.getAllRecipientsByUser(req.user!.userId, page, limit);
+      const result = await emailRepository.getAllRecipientsByUser(req.user!.userId, page, limit, campaignId);
 
       res.json({
         success: true,

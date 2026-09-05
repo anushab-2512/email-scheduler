@@ -14,6 +14,7 @@ router.use(authMiddleware);
 router.post('/schedule', emailController.schedule);
 router.post('/parse-csv', upload.single('file'), emailController.parseCsv);
 router.get('/campaigns', emailController.getCampaigns);
+router.get('/campaigns/:id', emailController.getCampaignById);
 router.get('/recipients', emailController.getAllRecipients);
 router.get('/events', emailController.events);
 router.get('/scheduled', emailController.getScheduled);
