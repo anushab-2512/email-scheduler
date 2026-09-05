@@ -51,6 +51,91 @@ export const emailRepository = {
     return (rows[0] as EmailCampaign) || null;
   },
 
+  async getCampaignByIdWithStats(campaignId: string, userId: string): Promise<CampaignWithStats | null> {
+    const db = getPool();
+    const [rows] = await db.execute<RowDataPacket[]>(
+      `SELECT 
+        c.id, c.user_id, c.sender_id, c.subject, c.body, c.start_time, c.delay_ms, c.hourly_limit, c.total_recipients, c.attachments, c.created_at, c.updated_at,
+        s.email as sender_email, s.name as sender_name
+      FROM email_campaigns c
+      LEFT JOIN senders s ON c.sender_id = s.id
+      WHERE c.id = ? AND c.user_id = ?`,
+      [campaignId, userId]
+    );
+
+    if (rows.length === 0) {
+      return null;
+    }
+
+    const r = rows[0];
+
+    const [statsRows] = await db.execute<RowDataPacket[]>(
+      `SELECT 
+        COUNT(id) as total_recipients_count,
+        COALESCE(SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END), 0) as sent_count,
+        COALESCE(SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END), 0) as failed_count,
+        COALESCE(SUM(CASE WHEN status IN ('scheduled', 'processing') THEN 1 ELSE 0 END), 0) as pending_count
+      FROM emails
+      WHERE campaign_id = ?`,
+      [campaignId]
+    );
+
+    const st = (statsRows[0] as any) || {
+      total_recipients_count: 0,
+      sent_count: 0,
+      failed_count: 0,
+      pending_count: 0,
+    };
+
+    let attachments: EmailAttachment[] = [];
+    if (r.attachments) {
+      try {
+        attachments = typeof r.attachments === 'string' ? JSON.parse(r.attachments) : r.attachments;
+      } catch {
+        attachments = [];
+      }
+    }
+
+    const sentCount = Number(st.sent_count) || 0;
+    const failedCount = Number(st.failed_count) || 0;
+    const pendingCount = Number(st.pending_count) || 0;
+    const totalRecipients = Number(r.total_recipients) || Number(st.total_recipients_count) || 0;
+    const sentPercentage = totalRecipients > 0 ? Math.round((sentCount / totalRecipients) * 100) : 0;
+
+    let status: 'completed' | 'in_progress' | 'failed' = 'in_progress';
+    if (pendingCount === 0 && totalRecipients > 0) {
+      if (sentCount > 0) {
+        status = 'completed';
+      } else if (failedCount > 0) {
+        status = 'failed';
+      }
+    }
+
+    return {
+      id: r.id,
+      user_id: r.user_id,
+      sender_id: r.sender_id,
+      sender_email: r.sender_email || 'Unknown',
+      sender_name: r.sender_name || 'Sender',
+      subject: r.subject,
+      body: r.body,
+      attachments,
+      attachments_count: attachments.length,
+      total_recipients: totalRecipients,
+      sent_count: sentCount,
+      failed_count: failedCount,
+      pending_count: pendingCount,
+      sent_percentage: sentPercentage,
+      status,
+      hourly_limit: r.hourly_limit,
+      delay_ms: r.delay_ms,
+      start_time: r.start_time,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    };
+  },
+
+
   async getCampaignsWithStats(userId: string, page = 1, limit = 20): Promise<{
     items: CampaignWithStats[];
     total: number;
@@ -80,7 +165,7 @@ export const emailRepository = {
     }
 
     // Fetch paginated campaigns without joining the full emails table into sort memory
-    const [rows] = await db.execute<RowDataPacket[]>(
+    const [rows] = await db.query<RowDataPacket[]>(
       `SELECT 
         c.id, c.user_id, c.sender_id, c.subject, c.body, c.start_time, c.delay_ms, c.hourly_limit, c.total_recipients, c.attachments, c.created_at, c.updated_at,
         s.email as sender_email, s.name as sender_name
@@ -106,7 +191,7 @@ export const emailRepository = {
     // Fetch stats for the returned campaigns
     const campaignIds = rows.map((r) => r.id);
     const placeholders = campaignIds.map(() => '?').join(',');
-    const [statsRows] = await db.execute<RowDataPacket[]>(
+    const [statsRows] = await db.query<RowDataPacket[]>(
       `SELECT 
         campaign_id,
         COUNT(id) as total_recipients_count,
@@ -268,7 +353,7 @@ export const emailRepository = {
     return email as EmailWithCampaign | null;
   },
 
-  async getAllRecipientsByUser(userId: string, page = 1, limit = 50): Promise<{
+  async getAllRecipientsByUser(userId: string, page = 1, limit = 50, campaignId?: string): Promise<{
     items: RecipientItem[];
     total: number;
     page: number;
@@ -278,23 +363,31 @@ export const emailRepository = {
     const db = getPool();
     const offset = (page - 1) * limit;
 
-    const [countRows] = await db.execute<RowDataPacket[]>(
-      'SELECT COUNT(*) as total FROM emails WHERE user_id = ?',
-      [userId]
-    );
+    let countSql = 'SELECT COUNT(*) as total FROM emails WHERE user_id = ?';
+    const countParams: any[] = [userId];
+    if (campaignId) {
+      countSql += ' AND campaign_id = ?';
+      countParams.push(campaignId);
+    }
+
+    const [countRows] = await db.execute<RowDataPacket[]>(countSql, countParams);
     const total = (countRows[0] as { total: number })?.total || 0;
 
-    const [rows] = await db.execute<RowDataPacket[]>(
-      `SELECT 
+    let querySql = `SELECT 
         e.id, e.campaign_id, e.recipient_email, e.status, e.sent_at, e.created_at, e.updated_at,
         COALESCE(c.subject, 'Untitled') as campaign_subject
       FROM emails e
       LEFT JOIN email_campaigns c ON e.campaign_id = c.id
-      WHERE e.user_id = ?
-      ORDER BY e.created_at DESC
-      LIMIT ? OFFSET ?`,
-      [userId, limit, offset]
-    );
+      WHERE e.user_id = ?`;
+    const queryParams: any[] = [userId];
+    if (campaignId) {
+      querySql += ' AND e.campaign_id = ?';
+      queryParams.push(campaignId);
+    }
+    querySql += ' ORDER BY e.created_at DESC LIMIT ? OFFSET ?';
+    queryParams.push(limit, offset);
+
+    const [rows] = await db.query<RowDataPacket[]>(querySql, queryParams);
 
     return {
       items: rows as RecipientItem[],
@@ -324,7 +417,7 @@ export const emailRepository = {
     );
     const total = (countRows[0] as { total: number }).total;
 
-    const [rows] = await db.execute<RowDataPacket[]>(
+    const [rows] = await db.query<RowDataPacket[]>(
       "SELECT * FROM emails WHERE user_id = ? AND status IN ('scheduled', 'processing') ORDER BY scheduled_at ASC LIMIT ? OFFSET ?",
       [userId, limit, offset]
     );
@@ -342,7 +435,7 @@ export const emailRepository = {
     );
     const total = (countRows[0] as { total: number }).total;
 
-    const [rows] = await db.execute<RowDataPacket[]>(
+    const [rows] = await db.query<RowDataPacket[]>(
       "SELECT * FROM emails WHERE user_id = ? AND status IN ('sent', 'failed') ORDER BY sent_at DESC, updated_at DESC LIMIT ? OFFSET ?",
       [userId, limit, offset]
     );

@@ -229,7 +229,7 @@ async function searchFromDatabase(
     );
     const total = (countRows[0] as { total: number })?.total || 0;
 
-    const [rows] = await db.execute<any[]>(
+    const [rows] = await db.query<any[]>(
       `SELECT e.*, s.email as sender_email 
        FROM emails e 
        LEFT JOIN senders s ON e.sender_id = s.id 
