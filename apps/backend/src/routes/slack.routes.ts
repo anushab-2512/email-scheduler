@@ -7,6 +7,8 @@ const router = Router();
 // Connect and callback need special handling — connect requires auth, callback does not (redirect from Slack)
 router.get('/connect', authMiddleware, slackController.connect);
 router.get('/callback', slackController.callback); // No auth — this is a redirect from Slack
+router.post('/webhook', authMiddleware, slackController.saveWebhook);
+router.post('/test', authMiddleware, slackController.testNotification);
 router.post('/disconnect', authMiddleware, slackController.disconnect);
 router.get('/status', authMiddleware, slackController.status);
 

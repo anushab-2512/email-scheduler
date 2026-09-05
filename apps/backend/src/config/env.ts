@@ -50,9 +50,19 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().min(16).default('test-session-secret-at-least-32-chars-long'),
 
   // Slack
-  SLACK_CLIENT_ID: z.string().default(''),
-  SLACK_CLIENT_SECRET: z.string().default(''),
-  SLACK_REDIRECT_URL: z.string().default('http://localhost:4000/api/slack/callback'),
+  SLACK_CLIENT_ID: z.string().default('REMOVED_CLIENT_ID'),
+  SLACK_CLIENT_SECRET: z.string().default('REMOVED_SECRET'),
+  SLACK_REDIRECT_URL: z.string().default(
+    process.env.NODE_ENV === 'production'
+      ? 'https://email-scheduler-tehc.onrender.com/api/slack/callback'
+      : 'http://localhost:4000/api/slack/callback'
+  ).transform(val => {
+    const trimmed = val.trim();
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      return `https://${trimmed}`;
+    }
+    return trimmed;
+  }),
 
   // SMTP (Ethereal)
   SMTP_HOST: z.string().default('smtp.ethereal.email'),
