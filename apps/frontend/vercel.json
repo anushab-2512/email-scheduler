@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://email-scheduler-tehc.onrender.com/api/$1"
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": "https://email-scheduler-tehc.onrender.com/admin/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
