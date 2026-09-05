@@ -8,7 +8,13 @@ dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(4000),
-  FRONTEND_URL: z.string().url().default('http://localhost:5173'),
+  FRONTEND_URL: z.string().default('http://localhost:5173').transform(val => {
+    const trimmed = val.trim().replace(/\/$/, '');
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      return `https://${trimmed}`;
+    }
+    return trimmed;
+  }),
 
   // MySQL
   DATABASE_URL: z.string().optional(),
@@ -32,7 +38,13 @@ const envSchema = z.object({
   // Google OAuth
   GOOGLE_CLIENT_ID: z.string().default(process.env.NODE_ENV === 'test' ? 'test-client-id' : ''),
   GOOGLE_CLIENT_SECRET: z.string().default(process.env.NODE_ENV === 'test' ? 'test-client-secret' : ''),
-  GOOGLE_CALLBACK_URL: z.string().url().default('http://localhost:4000/api/auth/google/callback'),
+  GOOGLE_CALLBACK_URL: z.string().default('http://localhost:4000/api/auth/google/callback').transform(val => {
+    const trimmed = val.trim();
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      return `https://${trimmed}`;
+    }
+    return trimmed;
+  }),
 
   // Session
   SESSION_SECRET: z.string().min(16).default('test-session-secret-at-least-32-chars-long'),
