@@ -7,7 +7,9 @@ import { UnauthorizedError } from '../utils/errors';
 
 export function authMiddleware(req: AuthenticatedRequest, _res: Response, next: NextFunction): void {
   try {
-    const token = req.cookies?.token;
+    const authHeader = req.headers.authorization;
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const token = req.cookies?.token || bearerToken;
 
     if (!token) {
       throw new UnauthorizedError('No authentication token provided');

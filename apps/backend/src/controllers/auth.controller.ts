@@ -99,7 +99,7 @@ export const authController = {
       });
 
       // Redirect to frontend dashboard
-      res.redirect(`${env.FRONTEND_URL}/dashboard`);
+      res.redirect(`${env.FRONTEND_URL}/dashboard?token=${token}`);
     } catch (error) {
       logger.error('AUTH', 'OAuth callback failed', {
         error: error instanceof Error ? error.message : String(error),
@@ -170,7 +170,7 @@ export const authController = {
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/',
       });
-      res.redirect(`${env.FRONTEND_URL}/dashboard`);
+      res.redirect(`${env.FRONTEND_URL}/dashboard?token=${token}`);
     } catch (error) {
       next(error);
     }
