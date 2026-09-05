@@ -18,3 +18,21 @@ export function useDisconnectSlack() {
     },
   });
 }
+
+export function useSaveSlackWebhook() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { webhookUrl: string; channelName?: string }) =>
+      api.post('/slack/webhook', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['slack', 'status'] });
+    },
+  });
+}
+
+export function useSendSlackTest() {
+  return useMutation({
+    mutationFn: () => api.post('/slack/test'),
+  });
+}
+

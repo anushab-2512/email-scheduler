@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { env } from '../config/env';
-import { getSlackAuthUrl, exchangeSlackCode } from '../integrations/slack';
+import { getSlackAuthUrl, exchangeSlackCode, sendSlackMessage } from '../integrations/slack';
 import { slackRepository } from '../repositories/slack.repository';
 import { getRedis } from '../redis/redis';
 import { REDIS_KEYS } from '../config/constants';
@@ -74,6 +74,58 @@ export const slackController = {
         error: error instanceof Error ? error.message : String(error),
       });
       res.redirect(`${env.FRONTEND_URL}/dashboard?slack=error`);
+    }
+  },
+
+  /** POST /api/slack/webhook — connect via incoming webhook URL directly */
+  async saveWebhook(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new UnauthorizedError();
+      const { webhookUrl, channelName } = req.body;
+      if (!webhookUrl || typeof webhookUrl !== 'string' || !webhookUrl.startsWith('https://hooks.slack.com/')) {
+        res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_WEBHOOK', message: 'Please provide a valid Slack incoming webhook URL starting with https://hooks.slack.com/' }
+        });
+        return;
+      }
+
+      await slackRepository.upsert({
+        userId: req.user.userId,
+        teamId: 'manual-webhook',
+        teamName: channelName || 'Slack Channel',
+        accessToken: 'webhook-only',
+        webhookUrl,
+      });
+
+      logger.info('SLACK', 'Manual webhook configured', { userId: req.user.userId });
+      res.json({ success: true, data: { message: 'Slack webhook connected successfully' } });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** POST /api/slack/test — send a test alert to the connected Slack channel */
+  async testNotification(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new UnauthorizedError();
+      const conn = await slackRepository.findActiveByUserId(req.user.userId);
+      if (!conn || !conn.webhook_url) {
+        res.status(400).json({
+          success: false,
+          error: { code: 'NOT_CONNECTED', message: 'No active Slack connection found' }
+        });
+        return;
+      }
+
+      await sendSlackMessage(
+        conn.webhook_url,
+        `🔔 *Test Notification from ReachInbox Email Scheduler*\nYour Slack alert channel is connected and ready to receive hourly rate-limit notifications!`
+      );
+
+      res.json({ success: true, data: { message: 'Test message sent to Slack successfully!' } });
+    } catch (error) {
+      next(error);
     }
   },
 
