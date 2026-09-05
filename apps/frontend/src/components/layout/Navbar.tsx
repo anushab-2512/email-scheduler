@@ -14,6 +14,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSlackModal, onOpenSenderMo
   const { data: slack } = useSlackStatus();
   const logout = useLogout();
 
+  const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const bullBoardUrl = import.meta.env.VITE_BULL_BOARD_URL || (isLocal ? 'http://localhost:4000/admin/queues' : 'https://email-scheduler-tehc.onrender.com/admin/queues');
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -46,7 +49,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSlackModal, onOpenSenderMo
 
           {/* Bull Board link */}
           <a
-            href="http://localhost:4000/admin/queues"
+            href={bullBoardUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-border bg-card hover:bg-accent text-foreground transition-colors"
