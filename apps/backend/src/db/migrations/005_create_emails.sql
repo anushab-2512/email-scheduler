@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS emails (
+  id VARCHAR(36) PRIMARY KEY,
+  campaign_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36) NOT NULL,
+  sender_id VARCHAR(36) NOT NULL,
+  recipient_email VARCHAR(255) NOT NULL,
+  subject VARCHAR(500) NOT NULL,
+  body TEXT NOT NULL,
+  scheduled_at TIMESTAMP NOT NULL,
+  sent_at TIMESTAMP NULL,
+  status ENUM('scheduled', 'processing', 'sent', 'failed') NOT NULL DEFAULT 'scheduled',
+  attempt_count INT NOT NULL DEFAULT 0,
+  bull_job_id VARCHAR(255) NULL,
+  error_message TEXT NULL,
+  ethereal_message_id VARCHAR(255) NULL,
+  ethereal_url TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (campaign_id) REFERENCES email_campaigns(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (sender_id) REFERENCES senders(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

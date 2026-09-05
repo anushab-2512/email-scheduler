@@ -1,0 +1,3 @@
+@echo off
+echo Starting Redis Server on localhost:6379 with configured password...
+redis-server --port 6379 --requirepass Anusha@123

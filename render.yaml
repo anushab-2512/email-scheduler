@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: email-scheduler-backend
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build:backend
+    startCommand: npm run start:backend
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: START_WORKER
+        value: "true"
+      - key: MYSQL_SSL
+        value: "true"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: SMTP_HOST
+        value: smtp.ethereal.email
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        value: do5pnebti5pc256m@ethereal.email
+      - key: SMTP_PASSWORD
+        value: XEX1dkjSVrpX3vWA4Q

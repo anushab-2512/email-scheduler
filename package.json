@@ -1,0 +1,29 @@
+{
+  "name": "email-scheduler",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-grade email job scheduler with BullMQ, React dashboard, and real-time queue visibility",
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev -w apps/frontend",
+    "dev:backend": "npm run dev -w apps/backend",
+    "dev:worker": "npm run dev:worker -w apps/backend",
+    "build": "npm run build -w apps/backend && npm run build -w apps/frontend",
+    "build:backend": "npm run build -w apps/backend",
+    "build:frontend": "npm run build -w apps/frontend",
+    "start": "npm run start -w apps/backend",
+    "start:backend": "npm run start -w apps/backend",
+    "lint": "npm run lint -w apps/backend && npm run lint -w apps/frontend",
+    "test": "npm run test -w apps/backend",
+    "db:migrate": "npm run db:migrate -w apps/backend",
+    "db:seed": "npm run db:seed -w apps/backend",
+    "redis": "redis-server --port 6379 --requirepass Anusha@123",
+    "redis:stop": "redis-cli -a Anusha@123 shutdown"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
