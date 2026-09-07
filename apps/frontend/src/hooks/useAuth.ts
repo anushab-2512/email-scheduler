@@ -16,7 +16,7 @@ export function useLogout() {
     mutationFn: () => api.post('/auth/logout'),
     onSuccess: () => {
       localStorage.removeItem('auth_token');
-      queryClient.setQueryData(['currentUser'], null);
+      queryClient.clear();
       window.location.href = '/login';
     },
   });
