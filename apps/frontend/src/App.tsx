@@ -26,14 +26,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 export const App: React.FC = () => {
-  React.useEffect(() => {
-    // Keepalive ping every 4 minutes to prevent Render free tier from sleeping while tab is open
-    const interval = setInterval(() => {
-      fetch('/api/health').catch(() => {});
-    }, 4 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <ToastProvider>
       <BrowserRouter>
