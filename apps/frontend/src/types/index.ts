@@ -27,6 +27,19 @@ export interface Email {
   updated_at: string;
 }
 
+export interface EmailPreviewData {
+  id: string;
+  recipient_email: string;
+  sender_email?: string | null;
+  sender_name?: string | null;
+  subject: string;
+  body: string;
+  sent_at: string | null;
+  status: EmailStatus;
+  ethereal_url: string | null;
+  ethereal_message_id: string | null;
+}
+
 export interface Sender {
   id: string;
   user_id: string;

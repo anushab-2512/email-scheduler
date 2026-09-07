@@ -20,6 +20,7 @@ router.get('/events', emailController.events);
 router.get('/scheduled', emailController.getScheduled);
 router.get('/sent', emailController.getSent);
 router.get('/search', emailController.search);
+router.get('/:id/preview', emailController.getPreview);
 router.get('/:id', emailController.getById);
 router.delete('/campaigns/:id', emailController.deleteCampaign);
 router.delete('/:id', emailController.deleteCampaign);

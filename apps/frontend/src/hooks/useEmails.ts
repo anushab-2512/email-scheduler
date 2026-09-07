@@ -1,7 +1,16 @@
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { Email, PaginatedResult, ScheduleEmailPayload, CampaignWithStats, RecipientItem } from '../types';
+import { Email, EmailPreviewData, PaginatedResult, ScheduleEmailPayload, CampaignWithStats, RecipientItem } from '../types';
+
+export function useEmailPreview(id?: string | null) {
+  return useQuery<EmailPreviewData>({
+    queryKey: ['email-preview', id],
+    queryFn: () => api.get<EmailPreviewData>(`/emails/${id}/preview`),
+    enabled: !!id,
+    staleTime: 60000,
+  });
+}
 
 export function useCampaign(id?: string) {
   return useQuery<CampaignWithStats>({

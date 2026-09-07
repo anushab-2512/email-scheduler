@@ -491,6 +491,22 @@ export const emailRepository = {
     return (rows[0] as Email) || null;
   },
 
+  async getEmailPreviewById(id: string, userId: string): Promise<(Email & { sender_email?: string; sender_name?: string }) | null> {
+    const db = getPool();
+    const [rows] = await db.execute<RowDataPacket[]>(
+      `SELECT e.id, e.campaign_id, e.user_id, e.sender_id, e.recipient_email, e.subject, e.body,
+              e.scheduled_at, e.sent_at, e.status, e.attempt_count, e.bull_job_id, e.error_message,
+              e.ethereal_message_id, e.ethereal_url, e.created_at, e.updated_at,
+              s.email as sender_email, s.name as sender_name
+       FROM emails e
+       LEFT JOIN senders s ON e.sender_id = s.id
+       WHERE e.id = ? AND e.user_id = ?`,
+      [id, userId]
+    );
+    return (rows[0] as any) || null;
+  },
+
+
   /**
    * Delete a campaign and all associated data across the application.
    * Safety check: If any email in the campaign is currently 'processing', prevents deletion.
