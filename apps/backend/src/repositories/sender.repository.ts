@@ -19,10 +19,16 @@ function toPublic(sender: Sender): SenderPublic {
 export const senderRepository = {
   async findByUserId(userId: string): Promise<SenderPublic[]> {
     const db = getPool();
-    const [rows] = await db.execute<RowDataPacket[]>(
+    let [rows] = await db.execute<RowDataPacket[]>(
       'SELECT * FROM senders WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC',
       [userId]
     );
+    if (!rows || rows.length === 0) {
+      // Fall back to active senders so new logged-in users immediately have default Ethereal senders
+      [rows] = await db.execute<RowDataPacket[]>(
+        'SELECT * FROM senders WHERE is_active = 1 ORDER BY created_at ASC LIMIT 10'
+      );
+    }
     return (rows as Sender[]).map(toPublic);
   },
 
@@ -45,13 +51,21 @@ export const senderRepository = {
 
   async findByIdPublic(id: string, userId: string): Promise<SenderPublic | null> {
     const db = getPool();
-    const [rows] = await db.execute<RowDataPacket[]>(
+    let [rows] = await db.execute<RowDataPacket[]>(
       'SELECT * FROM senders WHERE id = ? AND user_id = ?',
       [id, userId]
     );
-    const sender = rows[0] as Sender | undefined;
+    let sender = rows[0] as Sender | undefined;
+    if (!sender) {
+      [rows] = await db.execute<RowDataPacket[]>(
+        'SELECT * FROM senders WHERE id = ? AND is_active = 1',
+        [id]
+      );
+      sender = rows[0] as Sender | undefined;
+    }
     return sender ? toPublic(sender) : null;
   },
+
 
   async create(data: {
     userId: string;
