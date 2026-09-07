@@ -140,6 +140,49 @@ export const emailController = {
     }
   },
 
+  /** GET /api/emails/:id/preview — Fetch sent email details for preview */
+  async getPreview(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const emailId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      if (!emailId) {
+        res.status(400).json({
+          success: false,
+          error: { code: 'BAD_REQUEST', message: 'Email ID is required.' },
+        });
+        return;
+      }
+
+      const email = await emailRepository.getEmailPreviewById(emailId, req.user!.userId);
+
+      if (!email) {
+        res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Email not found.' },
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          id: email.id,
+          recipient_email: email.recipient_email,
+          sender_email: email.sender_email || null,
+          sender_name: email.sender_name || null,
+          subject: email.subject,
+          body: email.body,
+          sent_at: email.sent_at,
+          status: email.status,
+          ethereal_url: email.ethereal_url,
+          ethereal_message_id: email.ethereal_message_id,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+
   /** GET /api/emails/campaigns — Paginated composed email campaigns with stats for Email Details */
   async getCampaigns(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {

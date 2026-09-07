@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Send, Calendar, Mail, AlertCircle, ExternalLink, ChevronLeft, ChevronRight, Trash2, Loader2 } from 'lucide-react';
+import { Send, Calendar, Mail, AlertCircle, Eye, ChevronLeft, ChevronRight, Trash2, Loader2 } from 'lucide-react';
 import { useSentEmails, useDeleteCampaign } from '../../hooks/useEmails';
 import { StatusBadge } from '../../components/common/Badge';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { EmptyState } from '../../components/common/EmptyState';
 import { formatDate, truncate } from '../../lib/utils';
 import { useToast } from '../../components/common/Toast';
+import { EmailPreviewModal } from './EmailPreviewModal';
 
 export const SentEmailsTable: React.FC = () => {
   const [page, setPage] = useState(1);
@@ -14,6 +15,7 @@ export const SentEmailsTable: React.FC = () => {
   const deleteMutation = useDeleteCampaign();
   const [emailToDelete, setEmailToDelete] = useState<any | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [previewEmailId, setPreviewEmailId] = useState<string | null>(null);
 
   if (isLoading) {
     return <LoadingSpinner size={32} text="Loading delivered emails from MySQL..." />;
@@ -91,21 +93,15 @@ export const SentEmailsTable: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {email.ethereal_url ? (
-                      <a
-                        href={email.ethereal_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
-                      >
-                        <span>View Preview</span>
-                        <ExternalLink size={12} />
-                      </a>
-                    ) : (
-                      <span className="text-[11px] font-mono text-muted-foreground/70">
-                        {email.ethereal_message_id ? truncate(email.ethereal_message_id, 20) : '—'}
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPreviewEmailId(email.id)}
+                      className="inline-flex items-center gap-1.5 text-primary hover:underline font-medium cursor-pointer"
+                      title="View email preview"
+                    >
+                      <span>View Preview</span>
+                      <Eye size={12} />
+                    </button>
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={email.status} />
@@ -204,6 +200,12 @@ export const SentEmailsTable: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Email Preview Modal */}
+      <EmailPreviewModal
+        emailId={previewEmailId}
+        onClose={() => setPreviewEmailId(null)}
+      />
     </div>
   );
 };
