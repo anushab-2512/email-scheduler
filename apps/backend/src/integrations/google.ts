@@ -11,9 +11,8 @@ export function getGoogleAuthUrl(state: string): string {
     redirect_uri: env.GOOGLE_CALLBACK_URL,
     response_type: 'code',
     scope: 'openid email profile',
-    access_type: 'offline',
     state,
-    prompt: 'consent',
+    prompt: 'select_account',
   });
   return `${GOOGLE_AUTH_URL}?${params.toString()}`;
 }
