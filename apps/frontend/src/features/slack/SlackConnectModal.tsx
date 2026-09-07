@@ -88,8 +88,9 @@ export const SlackConnectModal: React.FC<SlackConnectModalProps> = ({ isOpen, on
               <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 flex items-start gap-3">
                 <CheckCircle2 size={18} className="text-emerald-500 mt-0.5 shrink-0" />
                 <div className="flex-1">
-                  <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                    Connected to {slack.teamName || 'Workspace'}
+                  <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Connected to {slack.teamName || 'Workspace'}</span>
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-0.5">
                     Hourly rate-limit alerts are actively posted to your incoming webhook channel.
