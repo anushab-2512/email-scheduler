@@ -12,6 +12,14 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: FRONTEND_URL
+        value: https://email-scheduler-frontend-zeta.vercel.app
+      - key: GOOGLE_CALLBACK_URL
+        value: https://email-scheduler-tehc.onrender.com/api/auth/google/callback
+      - key: GOOGLE_CLIENT_ID
+        value: 862591490941-nb6hjuik2iohg7kvj4vt0v3p6rbdad16.apps.googleusercontent.com
+      - key: GOOGLE_CLIENT_SECRET
+        value: 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
       - key: START_WORKER
         value: "true"
       - key: MYSQL_SSL
