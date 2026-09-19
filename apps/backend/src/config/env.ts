@@ -59,7 +59,7 @@ const envSchema = z.object({
 
   // Slack
   SLACK_CLIENT_ID: z.string().default('REMOVED_CLIENT_ID'),
-  SLACK_CLIENT_SECRET: z.string().default('REMOVED_SECRET'),
+  SLACK_CLIENT_SECRET: z.string().default(''),
   SLACK_REDIRECT_URL: z.string().default(
     process.env.NODE_ENV === 'production'
       ? 'https://email-scheduler-tehc.onrender.com/api/slack/callback'
