@@ -58,7 +58,7 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().min(16).default('test-session-secret-at-least-32-chars-long'),
 
   // Slack
-  SLACK_CLIENT_ID: z.string().default('REMOVED_CLIENT_ID'),
+  SLACK_CLIENT_ID: z.string().default(''),
   SLACK_CLIENT_SECRET: z.string().default(''),
   SLACK_REDIRECT_URL: z.string().default(
     process.env.NODE_ENV === 'production'
