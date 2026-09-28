@@ -33,7 +33,7 @@ export async function exchangeGoogleCode(code: string): Promise<{ access_token: 
   if (!res.ok) {
     const text = await res.text();
     logger.error('AUTH', 'Google token exchange failed', { status: res.status, body: text });
-    throw new Error('Failed to exchange Google authorization code');
+    throw new Error(`Google token exchange failed (${res.status}): ${text}`);
   }
 
   return res.json() as Promise<{ access_token: string; id_token: string }>;

@@ -1,12 +1,41 @@
-import React from 'react';
-import { Layers, ShieldCheck, Zap, RefreshCw, Send, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Layers, ShieldCheck, Zap, RefreshCw, Send, AlertCircle, Clock } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const searchParams = new URLSearchParams(window.location.search);
   const error = searchParams.get('error');
 
-  const handleGoogleLogin = () => {
+  const [cooldown, setCooldown] = useState(0);
+
+  // If returning from a rate_limited error, start with a 30s cooldown
+  useEffect(() => {
+    if (error === 'rate_limited') {
+      setCooldown(30);
+    }
+  }, [error]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+
+  const handleGoogleLogin = useCallback(() => {
+    if (cooldown > 0) return;
+    setCooldown(10); // Prevent rapid re-clicks (10s cooldown)
     window.location.href = '/api/auth/google';
+  }, [cooldown]);
+
+  const getErrorMessage = () => {
+    switch (error) {
+      case 'rate_limited':
+        return 'Too many sign-in attempts. Please wait a moment before trying again.';
+      case 'auth_failed':
+        return 'Google sign-in was not completed or failed. Please try again.';
+      default:
+        return 'Authentication failed. Please verify your connection.';
+    }
   };
 
   return (
@@ -32,13 +61,13 @@ export const LoginPage: React.FC = () => {
 
           {/* Error Alert Banner */}
           {error && (
-            <div className="flex items-center gap-3 p-3 mb-6 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm animate-in fade-in">
-              <AlertCircle size={18} className="shrink-0" />
-              <span>
-                {error === 'auth_failed'
-                  ? 'Google sign-in was not completed or failed. Please try again.'
-                  : 'Authentication failed. Please verify your connection.'}
-              </span>
+            <div className={`flex items-center gap-3 p-3 mb-6 rounded-xl border text-sm animate-in fade-in ${
+              error === 'rate_limited'
+                ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                : 'bg-destructive/10 border-destructive/20 text-destructive'
+            }`}>
+              {error === 'rate_limited' ? <Clock size={18} className="shrink-0" /> : <AlertCircle size={18} className="shrink-0" />}
+              <span>{getErrorMessage()}</span>
             </div>
           )}
 
@@ -73,7 +102,12 @@ export const LoginPage: React.FC = () => {
           {/* Google OAuth Button */}
           <button
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-card hover:bg-accent border border-border shadow-sm text-sm font-semibold text-foreground transition-all hover:scale-[1.01] active:scale-[0.99]"
+            disabled={cooldown > 0}
+            className={`w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-border shadow-sm text-sm font-semibold transition-all ${
+              cooldown > 0
+                ? 'bg-card/50 text-muted-foreground cursor-not-allowed opacity-60'
+                : 'bg-card hover:bg-accent text-foreground hover:scale-[1.01] active:scale-[0.99]'
+            }`}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -93,7 +127,9 @@ export const LoginPage: React.FC = () => {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
               />
             </svg>
-            <span>Sign in with Google</span>
+            <span>
+              {cooldown > 0 ? `Please wait ${cooldown}s...` : 'Sign in with Google'}
+            </span>
           </button>
 
           {/* Demo Sign-in Button */}

@@ -13,10 +13,43 @@ import { logger } from '../utils/logger';
 // Resilient in-memory store for OAuth state (ensures CSRF protection even if Redis is reconnecting)
 const inMemoryOAuthStates = new Map<string, number>();
 
+// In-memory rate limit tracker for OAuth initiation (prevents rapid-fire redirects to Google)
+const oauthRateLimitMap = new Map<string, number>();
+const OAUTH_RATE_LIMIT_WINDOW_MS = 5_000; // 5 seconds between OAuth attempts per IP
+
+// Clean up stale entries every 60 seconds
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamp] of oauthRateLimitMap) {
+    if (now - timestamp > OAUTH_RATE_LIMIT_WINDOW_MS) {
+      oauthRateLimitMap.delete(key);
+    }
+  }
+  // Also clean expired in-memory OAuth states
+  for (const [key, expiry] of inMemoryOAuthStates) {
+    if (expiry < now) {
+      inMemoryOAuthStates.delete(key);
+    }
+  }
+}, 60_000);
+
 export const authController = {
   /** GET /api/auth/google — redirect to Google OAuth */
-  async googleAuth(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      // Rate limit OAuth initiation per IP to prevent Google's 429 "Too Many Requests"
+      const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+      const lastAttempt = oauthRateLimitMap.get(clientIp);
+      const now = Date.now();
+
+      if (lastAttempt && now - lastAttempt < OAUTH_RATE_LIMIT_WINDOW_MS) {
+        const waitSec = Math.ceil((OAUTH_RATE_LIMIT_WINDOW_MS - (now - lastAttempt)) / 1000);
+        logger.warn('AUTH', 'OAuth rate limit hit — too many rapid attempts', { clientIp, waitSec });
+        res.redirect(`${env.FRONTEND_URL}/login?error=rate_limited`);
+        return;
+      }
+      oauthRateLimitMap.set(clientIp, now);
+
       // Generate and store state for CSRF protection
       const state = crypto.randomBytes(32).toString('hex');
       inMemoryOAuthStates.set(state, Date.now() + 600_000); // 10 min
@@ -101,10 +134,17 @@ export const authController = {
       // Redirect to frontend dashboard
       res.redirect(`${env.FRONTEND_URL}/dashboard?token=${token}`);
     } catch (error) {
-      logger.error('AUTH', 'OAuth callback failed', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      res.redirect(`${env.FRONTEND_URL}/login?error=auth_failed`);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      logger.error('AUTH', 'OAuth callback failed', { error: errorMsg });
+
+      // Detect rate limiting from Google (429 status or related message)
+      const isRateLimited =
+        errorMsg.toLowerCase().includes('too many requests') ||
+        errorMsg.includes('429') ||
+        errorMsg.toLowerCase().includes('rate limit');
+
+      const errorCode = isRateLimited ? 'rate_limited' : 'auth_failed';
+      res.redirect(`${env.FRONTEND_URL}/login?error=${errorCode}`);
     }
   },
 
